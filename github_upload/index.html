@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>ピル手帳</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ピル手帳">
+    <meta name="theme-color" content="#e91e8c">
+    <style>
+        :root {
+            --pink: #e91e8c;
+            --pink-light: #fce4ec;
+            --pink-mid: #f48fb1;
+            --pink-dark: #c2185b;
+            --green: #43a047;
+            --red-light: #ffcdd2;
+            --red-dark: #c62828;
+            --text: #2d2d2d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, 'Hiragino Sans', sans-serif;
+            background: linear-gradient(160deg, #fce4ec 0%, #f3e5f5 100%);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            padding: env(safe-area-inset-top, 24px) 16px 40px;
+            color: var(--text);
+        }
+
+        .wrap { max-width: 420px; margin: 0 auto; padding-top: 8px; }
+
+        .app-title {
+            text-align: center;
+            font-size: 1.7rem;
+            font-weight: 900;
+            color: var(--pink);
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+        .app-sub { text-align: center; font-size: 0.78rem; color: #aaa; margin-bottom: 20px; }
+
+        /* ===== Status card ===== */
+        .status-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 28px 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 6px 24px rgba(233,30,140,0.13);
+            text-align: center;
+        }
+        .status-emoji {
+            font-size: 3.2rem; line-height: 1; margin-bottom: 10px; transition: transform 0.3s;
+        }
+        .status-emoji.bounce { animation: bounce 0.5s; }
+        @keyframes bounce {
+            0%,100% { transform: scale(1); }
+            40% { transform: scale(1.35); }
+            70% { transform: scale(0.9); }
+        }
+        .status-label { font-size: 1.05rem; margin-bottom: 18px; }
+        .status-label.done { color: var(--green); font-weight: 700; }
+
+        .btn-main {
+            display: inline-block;
+            background: linear-gradient(135deg, #f06292, var(--pink-dark));
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            padding: 16px 52px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 5px 18px rgba(233,30,140,0.38);
+            transition: transform 0.18s, box-shadow 0.18s;
+            font-family: inherit;
+            letter-spacing: 0.05em;
+        }
+        .btn-main:active:not(:disabled) { transform: scale(0.96); }
+        .btn-main:disabled { background: #e0e0e0; color: #aaa; box-shadow: none; cursor: default; }
+
+        .next-alarm { margin-top: 13px; font-size: 0.78rem; color: #aaa; }
+
+        /* ===== Calendar card ===== */
+        .cal-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 6px 24px rgba(233,30,140,0.1);
+        }
+        .cal-header {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+        }
+        .cal-title { font-size: 1.1rem; font-weight: 700; color: var(--pink); }
+        .btn-nav {
+            background: none;
+            border: 2px solid var(--pink-mid);
+            border-radius: 50%;
+            width: 36px; height: 36px;
+            font-size: 0.85rem;
+            color: var(--pink);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-nav:active { background: var(--pink); color: #fff; }
+
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+
+        .day-lbl { text-align: center; font-size: 0.7rem; font-weight: 700; padding: 3px 0 6px; color: #aaa; }
+        .day-lbl.sun { color: #ef9a9a; }
+        .day-lbl.sat { color: #90caf9; }
+
+        .day {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; font-size: 0.8rem; transition: background 0.2s;
+        }
+        .day.taken { background: var(--green); color: #fff; font-weight: 700; font-size: 0.95rem; }
+        .day.missed { background: var(--red-light); color: var(--red-dark); }
+        .day.future { color: #ccc; }
+        .day.today-border { outline: 2.5px solid var(--pink); outline-offset: -1px; font-weight: 700; }
+        .day.sun { color: #ef9a9a; }
+        .day.sat { color: #90caf9; }
+        .day.taken.sun, .day.taken.sat, .day.taken.today-border { color: #fff; }
+
+        .streak-row {
+            display: flex; align-items: center; justify-content: center;
+            margin-top: 16px; padding-top: 14px;
+            border-top: 1.5px solid #fce4ec;
+            font-size: 0.88rem; color: var(--pink-dark); font-weight: 700;
+        }
+        .legend {
+            display: flex; gap: 14px; justify-content: center;
+            margin-top: 12px; font-size: 0.72rem; color: #aaa;
+        }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .legend-dot.taken { background: var(--green); }
+        .legend-dot.missed { background: var(--red-light); border: 1px solid var(--red-dark); }
+        .legend-dot.today-dot { border: 2px solid var(--pink); background: #fff; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="app-title">💊 ピル手帳</div>
+    <div class="app-sub">毎日の服薬を記録しよう</div>
+
+    <div class="status-card">
+        <div class="status-emoji" id="statusEmoji">💊</div>
+        <div class="status-label" id="statusLabel">今日はまだ飲んでいません</div>
+        <button class="btn-main" id="btnMain" onclick="markTaken()">飲んだ！</button>
+        <div class="next-alarm" id="nextAlarm"></div>
+    </div>
+
+    <div class="cal-card">
+        <div class="cal-header">
+            <button class="btn-nav" onclick="shiftMonth(-1)">◀</button>
+            <div class="cal-title" id="calTitle"></div>
+            <button class="btn-nav" onclick="shiftMonth(1)">▶</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="streak-row" id="streakRow"></div>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-dot taken"></div>服用済み</div>
+            <div class="legend-item"><div class="legend-dot missed"></div>未服用</div>
+            <div class="legend-item"><div class="legend-dot today-dot"></div>今日</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ntfy.sh トピック名（プッシュ通知用）
+const NTFY_ALARM = 'pill-alarm-pimsilencer';
+const NTFY_DONE  = 'pill-check-pimsilencer';
+
+const KEY_TAKEN = 'pill_taken';
+const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+let viewYear, viewMonth;
+
+function pad(n) { return String(n).padStart(2,'0'); }
+function fmtDate(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function todayStr() { return fmtDate(new Date()); }
+function getTaken() { return JSON.parse(localStorage.getItem(KEY_TAKEN) || '{}'); }
+function saveTaken(o) { localStorage.setItem(KEY_TAKEN, JSON.stringify(o)); }
+function isTakenToday() { return !!getTaken()[todayStr()]; }
+
+/* ---- 「飲んだ！」をntfyに通知（22時の条件チェック用） ---- */
+async function notifyDone() {
+    try {
+        await fetch(`https://ntfy.sh/${NTFY_DONE}`, {
+            method: 'POST',
+            headers: { 'Title': 'ピル記録', 'Tags': 'pill' },
+            body: todayStr()
+        });
+    } catch (_) { /* オフライン時はスキップ */ }
+}
+
+/* ---- 服薬記録 ---- */
+function markTaken() {
+    const data = getTaken();
+    data[todayStr()] = true;
+    saveTaken(data);
+    notifyDone();
+
+    const emoji = document.getElementById('statusEmoji');
+    emoji.classList.remove('bounce');
+    void emoji.offsetWidth;
+    emoji.classList.add('bounce');
+
+    refreshStatus();
+    renderCalendar();
+}
+
+/* ---- ステータスカード更新 ---- */
+function refreshStatus() {
+    const taken = isTakenToday();
+    const emoji = document.getElementById('statusEmoji');
+    const label = document.getElementById('statusLabel');
+    const btn   = document.getElementById('btnMain');
+    const alarm = document.getElementById('nextAlarm');
+
+    if (taken) {
+        emoji.textContent = '✅';
+        label.textContent = '今日のピルを飲みました！';
+        label.className = 'status-label done';
+        btn.disabled = true;
+        btn.textContent = '記録済み ✓';
+        alarm.textContent = '明日の 21:00 にリマインドします';
+    } else {
+        emoji.textContent = '💊';
+        label.textContent = '今日はまだ飲んでいません';
+        label.className = 'status-label';
+        btn.disabled = false;
+        btn.textContent = '飲んだ！';
+        const h = new Date().getHours();
+        if (h < 21)        alarm.textContent = '⏰ 今夜 21:00 にリマインドします';
+        else if (h === 21) alarm.textContent = '⏰ 22:00 までに記録してください';
+        else               alarm.textContent = '⚠️ 22:00 を過ぎています。忘れずに！';
+    }
+}
+
+/* ---- カレンダー描画 ---- */
+function renderCalendar() {
+    document.getElementById('calTitle').textContent = `${viewYear}年 ${MONTHS[viewMonth]}`;
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+
+    ['日','月','火','水','木','金','土'].forEach((l, i) => {
+        const el = document.createElement('div');
+        el.className = 'day-lbl' + (i===0?' sun':i===6?' sat':'');
+        el.textContent = l;
+        grid.appendChild(el);
+    });
+
+    const taken   = getTaken();
+    const today   = todayStr();
+    const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInM  = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+    for (let i = 0; i < firstDow; i++) grid.appendChild(Object.assign(document.createElement('div'), {className:'day'}));
+
+    for (let d = 1; d <= daysInM; d++) {
+        const ds  = `${viewYear}-${pad(viewMonth+1)}-${pad(d)}`;
+        const dow = new Date(viewYear, viewMonth, d).getDay();
+        const el  = document.createElement('div');
+        const cls = ['day'];
+        if (dow===0) cls.push('sun');
+        if (dow===6) cls.push('sat');
+        if (ds===today) cls.push('today-border');
+
+        if (taken[ds]) {
+            cls.push('taken'); el.textContent = '✓';
+        } else if (ds < today) {
+            cls.push('missed'); el.textContent = d;
+        } else {
+            cls.push('future'); el.textContent = d;
+        }
+        el.className = cls.join(' ');
+        grid.appendChild(el);
+    }
+
+    // 連続記録
+    let count = 0;
+    const cur = new Date();
+    if (!taken[today]) cur.setDate(cur.getDate() - 1);
+    while (taken[fmtDate(cur)]) { count++; cur.setDate(cur.getDate() - 1); }
+    const streak = document.getElementById('streakRow');
+    streak.textContent = count === 0 ? '記録を積み上げよう 💪' : `🔥 ${count}日連続服用中！`;
+}
+
+function shiftMonth(dir) {
+    viewMonth += dir;
+    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    if (viewMonth < 0)  { viewMonth = 11; viewYear--; }
+    renderCalendar();
+}
+
+/* ---- 初期化 ---- */
+function init() {
+    const now = new Date();
+    viewYear  = now.getFullYear();
+    viewMonth = now.getMonth();
+    refreshStatus();
+    renderCalendar();
+
+    // Service Worker 登録
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+}
+
+init();
+</script>
+</body>
+</html>
