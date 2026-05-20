@@ -1,0 +1,45 @@
+name: ピル手帳アラーム
+
+on:
+  schedule:
+    - cron: '0 12 * * *'
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+jobs:
+  alarm-21:
+    if: github.event.schedule == '0 12 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 21時リマインダーを送信
+        run: |
+          curl -s \
+            -H "Title: ピル手帳" \
+            -H "Tags: pill" \
+            -H "Priority: high" \
+            -d "今夜のピルを飲む時間です！飲んだらアプリで記録してください。" \
+            https://ntfy.sh/pill-alarm-pimsilencer
+
+  alarm-22:
+    if: github.event.schedule == '0 13 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 服用済みか確認
+        id: check
+        run: |
+          TODAY=$(TZ='Asia/Tokyo' date +%Y-%m-%d)
+          MESSAGES=$(curl -s "https://ntfy.sh/pill-check-pimsilencer/json?poll=1&since=4h" || echo "")
+          if echo "$MESSAGES" | grep -q "$TODAY"; then
+            echo "taken=true" >> $GITHUB_OUTPUT
+          else
+            echo "taken=false" >> $GITHUB_OUTPUT
+          fi
+      - name: 22時アラームを送信
+        if: steps.check.outputs.taken == 'false'
+        run: |
+          curl -s \
+            -H "Title: ピル手帳 ⚠️" \
+            -H "Tags: warning,pill" \
+            -H "Priority: urgent" \
+            -d "まだピルが記録されていません！忘れずに飲んでください！" \
+            https://ntfy.sh/pill-alarm-pimsilencer
