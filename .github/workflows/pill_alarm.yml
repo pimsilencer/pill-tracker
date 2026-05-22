@@ -1,9 +1,9 @@
 name: ピル手帳アラーム
 
-on:
+"on":
   schedule:
-       - cron: '0 14 * * *'   # 21:00 WIB (Jakarta)
-    　　- cron: '0 15 * * *'   # 22:00 WIB (Jakarta)
+    - cron: '0 14 * * *'
+    - cron: '0 15 * * *'
   workflow_dispatch:
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
       - name: 服用済みか確認
         id: check
         run: |
-          TODAY=$(TZ='Asia/Tokyo' date +%Y-%m-%d)
+          TODAY=$(TZ='Asia/Jakarta' date +%Y-%m-%d)
           MESSAGES=$(curl -s "https://ntfy.sh/pill-check-pimsilencer/json?poll=1&since=4h" || echo "")
           if echo "$MESSAGES" | grep -q "$TODAY"; then
             echo "taken=true" >> $GITHUB_OUTPUT
